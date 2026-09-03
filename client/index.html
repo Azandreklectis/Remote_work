@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <meta
+        name="description"
+        content="Game Stream remote gaming client"
+    >
+
+    <title>Game Stream</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css"
+    >
+</head>
+
+<body>
+    <main id="app">
+        <section id="connection-panel" class="panel">
+            <h1>Game Stream</h1>
+
+            <p id="connection-status">
+                Connecting to gaming PC...
+            </p>
+
+            <button
+                id="connect-button"
+                type="button"
+            >
+                Connect
+            </button>
+        </section>
+
+        <section
+            id="game-container"
+            class="game-container hidden"
+        >
+            <video
+                id="game-video"
+                class="game-video"
+                autoplay
+                playsinline
+                muted
+            ></video>
+
+            <div
+                id="loading-overlay"
+                class="overlay"
+            >
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+
+                    <p id="loading-message">
+                        Connecting to game...
+                    </p>
+                </div>
+            </div>
+
+            <div
+                id="error-overlay"
+                class="overlay hidden"
+            >
+                <div class="error-content">
+                    <h2>Connection Error</h2>
+
+                    <p id="error-message">
+                        Unable to connect to the gaming PC.
+                    </p>
+
+                    <button
+                        id="retry-button"
+                        type="button"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+
+            <div
+                id="touch-controls"
+                class="touch-controls"
+            >
+                <div
+                    id="virtual-stick"
+                    class="virtual-stick"
+                >
+                    <div
+                        id="stick-knob"
+                        class="stick-knob"
+                    ></div>
+                </div>
+
+                <div
+                    id="action-buttons"
+                    class="action-buttons"
+                >
+                    <button
+                        class="action-button"
+                        data-key="x"
+                        type="button"
+                    >
+                        X
+                    </button>
+
+                    <button
+                        class="action-button"
+                        data-key="z"
+                        type="button"
+                    >
+                        Z
+                    </button>
+
+                    <button
+                        class="action-button"
+                        data-key="space"
+                        type="button"
+                    >
+                        SPACE
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script
+        src="/static/js/ui.js"
+        defer
+    ></script>
+
+    <script
+        src="/static/js/controls.js"
+        defer
+    ></script>
+
+    <script
+        src="/static/js/webrtc.js"
+        defer
+    ></script>
+
+    <script
+        src="/static/js/main.js"
+        defer
+    ></script>
+</body>
+</html>

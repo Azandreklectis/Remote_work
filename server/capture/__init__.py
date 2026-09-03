@@ -1,0 +1,1 @@
+"""Screen capture components for the Game Stream server."""

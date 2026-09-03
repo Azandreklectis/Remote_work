@@ -1,0 +1,441 @@
+/*
+ * Main styling for the Game Stream browser client.
+ *
+ * The layout is designed primarily for a phone in landscape mode,
+ * while remaining usable on desktop browsers during development.
+ */
+
+:root {
+    --background: #050505;
+    --panel-background: #111111;
+    --text: #ffffff;
+    --muted-text: #aaaaaa;
+    --border: #2a2a2a;
+    --button-background: #202020;
+    --button-active: #3a3a3a;
+    --error: #ff5555;
+    --overlay-background: rgba(0, 0, 0, 0.78);
+    --control-background: rgba(20, 20, 20, 0.65);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--background);
+    color: var(--text);
+    font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+body {
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+button {
+    border: none;
+    outline: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+#app {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: var(--background);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ---------------------------------------------------------
+   Connection panel
+   --------------------------------------------------------- */
+
+.panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    width: min(90%, 420px);
+
+    padding: 32px;
+
+    transform: translate(-50%, -50%);
+
+    text-align: center;
+
+    background: var(--panel-background);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.panel h1 {
+    margin-bottom: 12px;
+
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.panel p {
+    margin-bottom: 24px;
+
+    color: var(--muted-text);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+#connect-button,
+#retry-button {
+    min-width: 130px;
+
+    padding: 12px 22px;
+
+    background: var(--button-background);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    transition:
+        background 0.15s ease,
+        transform 0.1s ease;
+}
+
+#connect-button:hover,
+#retry-button:hover {
+    background: var(--button-active);
+}
+
+#connect-button:active,
+#retry-button:active {
+    transform: scale(0.97);
+}
+
+/* ---------------------------------------------------------
+   Game container
+   --------------------------------------------------------- */
+
+.game-container {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    background: #000000;
+}
+
+.game-video {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    width: 100%;
+    height: 100%;
+
+    transform: translate(-50%, -50%);
+
+    object-fit: contain;
+
+    background: #000000;
+
+    pointer-events: none;
+}
+
+/* ---------------------------------------------------------
+   Overlays
+   --------------------------------------------------------- */
+
+.overlay {
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--overlay-background);
+
+    z-index: 20;
+}
+
+.loading-content,
+.error-content {
+    width: min(90%, 360px);
+
+    padding: 28px;
+
+    text-align: center;
+
+    background: var(--panel-background);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.loading-content p,
+.error-content p {
+    color: var(--muted-text);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.error-content h2 {
+    margin-bottom: 10px;
+
+    font-size: 22px;
+}
+
+.error-content p {
+    margin-bottom: 20px;
+    color: var(--error);
+}
+
+/* ---------------------------------------------------------
+   Loading spinner
+   --------------------------------------------------------- */
+
+.loading-spinner {
+    width: 36px;
+    height: 36px;
+
+    margin: 0 auto 18px;
+
+    border: 3px solid var(--border);
+    border-top-color: var(--text);
+    border-radius: 50%;
+
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ---------------------------------------------------------
+   Touch controls
+   --------------------------------------------------------- */
+
+.touch-controls {
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 10;
+
+    pointer-events: none;
+}
+
+.virtual-stick {
+    position: absolute;
+
+    left: 5%;
+    bottom: 7%;
+
+    width: 120px;
+    height: 120px;
+
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+
+    background: var(--control-background);
+
+    pointer-events: auto;
+
+    touch-action: none;
+}
+
+.stick-knob {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    width: 52px;
+    height: 52px;
+
+    transform: translate(-50%, -50%);
+
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.15);
+
+    pointer-events: none;
+}
+
+/* ---------------------------------------------------------
+   Action buttons
+   --------------------------------------------------------- */
+
+.action-buttons {
+    position: absolute;
+
+    right: 5%;
+    bottom: 7%;
+
+    display: grid;
+
+    grid-template-columns: repeat(2, 64px);
+
+    gap: 12px;
+
+    pointer-events: auto;
+}
+
+.action-button {
+    width: 64px;
+    height: 64px;
+
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+
+    background: var(--control-background);
+
+    font-size: 14px;
+    font-weight: 700;
+
+    touch-action: none;
+
+    transition:
+        background 0.08s ease,
+        transform 0.08s ease;
+}
+
+.action-button:active,
+.action-button.active {
+    background: var(--button-active);
+    transform: scale(0.92);
+}
+
+/* ---------------------------------------------------------
+   Landscape phone layout
+   --------------------------------------------------------- */
+
+@media (orientation: landscape) and (max-height: 600px) {
+    .virtual-stick {
+        left: 4%;
+        bottom: 6%;
+
+        width: 105px;
+        height: 105px;
+    }
+
+    .stick-knob {
+        width: 46px;
+        height: 46px;
+    }
+
+    .action-buttons {
+        right: 4%;
+        bottom: 6%;
+
+        grid-template-columns: repeat(2, 58px);
+
+        gap: 10px;
+    }
+
+    .action-button {
+        width: 58px;
+        height: 58px;
+
+        font-size: 12px;
+    }
+}
+
+/* ---------------------------------------------------------
+   Small phone screens
+   --------------------------------------------------------- */
+
+@media (max-width: 480px) {
+    .panel {
+        padding: 24px;
+    }
+
+    .panel h1 {
+        font-size: 26px;
+    }
+
+    .virtual-stick {
+        width: 100px;
+        height: 100px;
+    }
+
+    .stick-knob {
+        width: 44px;
+        height: 44px;
+    }
+
+    .action-buttons {
+        grid-template-columns: repeat(2, 54px);
+
+        gap: 8px;
+    }
+
+    .action-button {
+        width: 54px;
+        height: 54px;
+
+        font-size: 11px;
+    }
+}
+
+/* ---------------------------------------------------------
+   Desktop development layout
+   --------------------------------------------------------- */
+
+@media (min-width: 900px) and (min-height: 700px) {
+    .virtual-stick {
+        left: 40px;
+        bottom: 40px;
+    }
+
+    .action-buttons {
+        right: 40px;
+        bottom: 40px;
+    }
+}
+
+/* ---------------------------------------------------------
+   Accessibility / reduced motion
+   --------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .loading-spinner {
+        animation: none;
+    }
+
+    #connect-button,
+    #retry-button,
+    .action-button {
+        transition: none;
+    }
+}
