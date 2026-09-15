@@ -1,36 +1,79 @@
 /*
- * Main styling for the Game Stream browser client.
+ * =========================================================
+ * GAME STREAM CLIENT — MAIN STYLESHEET
+ * =========================================================
  *
- * The layout is designed primarily for a phone in landscape mode,
- * while remaining usable on desktop browsers during development.
+ * Current focus:
+ * - WebRTC screen streaming
+ * - Touchpad
+ * - Editable touchpad position
+ * - Editable touchpad size
+ * - Existing joystick/action-button styles preserved
+ *
+ * Touchpad behavior:
+ *
+ * NORMAL MODE
+ *   finger movement -> mouse movement
+ *   tap             -> left click
+ *
+ * EDIT MODE
+ *   drag inside     -> move touchpad
+ *   8 handles       -> resize touchpad
+ *   gear             -> exit edit mode
+ *
+ * =========================================================
  */
+
+
+/* =========================================================
+   ROOT VARIABLES
+   ========================================================= */
 
 :root {
     --background: #050505;
     --panel-background: #111111;
+
     --text: #ffffff;
     --muted-text: #aaaaaa;
+
     --border: #2a2a2a;
+
     --button-background: #202020;
     --button-active: #3a3a3a;
+
     --error: #ff5555;
+
     --overlay-background: rgba(0, 0, 0, 0.78);
+
     --control-background: rgba(20, 20, 20, 0.65);
+
+    --touchpad-background: rgba(35, 35, 35, 0.42);
+    --touchpad-border: rgba(255, 255, 255, 0.22);
 }
+
+
+/* =========================================================
+   GLOBAL
+   ========================================================= */
 
 * {
     box-sizing: border-box;
+
     margin: 0;
     padding: 0;
 }
+
 
 html,
 body {
     width: 100%;
     height: 100%;
+
     overflow: hidden;
+
     background: var(--background);
     color: var(--text);
+
     font-family:
         system-ui,
         -apple-system,
@@ -39,39 +82,55 @@ body {
         sans-serif;
 }
 
+
 body {
     touch-action: none;
+
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
 }
 
+
 button {
     border: none;
     outline: none;
+
     font: inherit;
     color: inherit;
+
     cursor: pointer;
+
     touch-action: manipulation;
 }
 
-#app {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background: var(--background);
-}
 
 .hidden {
     display: none !important;
 }
 
-/* ---------------------------------------------------------
-   Connection panel
-   --------------------------------------------------------- */
+
+/* =========================================================
+   APP
+   ========================================================= */
+
+#app {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    background: var(--background);
+}
+
+
+/* =========================================================
+   CONNECTION PANEL
+   ========================================================= */
 
 .panel {
     position: absolute;
+
     top: 50%;
     left: 50%;
 
@@ -84,9 +143,11 @@ button {
     text-align: center;
 
     background: var(--panel-background);
+
     border: 1px solid var(--border);
     border-radius: 16px;
 }
+
 
 .panel h1 {
     margin-bottom: 12px;
@@ -95,13 +156,20 @@ button {
     font-weight: 700;
 }
 
+
 .panel p {
     margin-bottom: 24px;
 
     color: var(--muted-text);
+
     font-size: 15px;
     line-height: 1.5;
 }
+
+
+/* =========================================================
+   CONNECT / RETRY BUTTONS
+   ========================================================= */
 
 #connect-button,
 #retry-button {
@@ -110,6 +178,7 @@ button {
     padding: 12px 22px;
 
     background: var(--button-background);
+
     border: 1px solid var(--border);
     border-radius: 10px;
 
@@ -121,19 +190,22 @@ button {
         transform 0.1s ease;
 }
 
+
 #connect-button:hover,
 #retry-button:hover {
     background: var(--button-active);
 }
+
 
 #connect-button:active,
 #retry-button:active {
     transform: scale(0.97);
 }
 
-/* ---------------------------------------------------------
-   Game container
-   --------------------------------------------------------- */
+
+/* =========================================================
+   GAME CONTAINER
+   ========================================================= */
 
 .game-container {
     position: relative;
@@ -145,6 +217,11 @@ button {
 
     background: #000000;
 }
+
+
+/* =========================================================
+   GAME VIDEO
+   ========================================================= */
 
 .game-video {
     position: absolute;
@@ -161,12 +238,18 @@ button {
 
     background: #000000;
 
+    /*
+     * Video must not receive pointer input.
+     * Touchpad/control layer receives input.
+     */
+
     pointer-events: none;
 }
 
-/* ---------------------------------------------------------
-   Overlays
-   --------------------------------------------------------- */
+
+/* =========================================================
+   OVERLAYS
+   ========================================================= */
 
 .overlay {
     position: absolute;
@@ -174,6 +257,7 @@ button {
     inset: 0;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -181,6 +265,7 @@ button {
 
     z-index: 20;
 }
+
 
 .loading-content,
 .error-content {
@@ -191,16 +276,20 @@ button {
     text-align: center;
 
     background: var(--panel-background);
+
     border: 1px solid var(--border);
     border-radius: 14px;
 }
 
+
 .loading-content p,
 .error-content p {
     color: var(--muted-text);
+
     font-size: 14px;
     line-height: 1.5;
 }
+
 
 .error-content h2 {
     margin-bottom: 10px;
@@ -208,14 +297,17 @@ button {
     font-size: 22px;
 }
 
+
 .error-content p {
     margin-bottom: 20px;
+
     color: var(--error);
 }
 
-/* ---------------------------------------------------------
-   Loading spinner
-   --------------------------------------------------------- */
+
+/* =========================================================
+   LOADING SPINNER
+   ========================================================= */
 
 .loading-spinner {
     width: 36px;
@@ -225,12 +317,15 @@ button {
 
     border: 3px solid var(--border);
     border-top-color: var(--text);
+
     border-radius: 50%;
 
     animation: spin 0.8s linear infinite;
 }
 
+
 @keyframes spin {
+
     from {
         transform: rotate(0deg);
     }
@@ -240,9 +335,10 @@ button {
     }
 }
 
-/* ---------------------------------------------------------
-   Touch controls
-   --------------------------------------------------------- */
+
+/* =========================================================
+   TOUCH CONTROLS LAYER
+   ========================================================= */
 
 .touch-controls {
     position: absolute;
@@ -251,8 +347,356 @@ button {
 
     z-index: 10;
 
+    /*
+     * The layer itself does not block the screen.
+     * Individual controls receive pointer input.
+     */
+
     pointer-events: none;
 }
+
+
+/* =========================================================
+   TOUCHPAD
+   =========================================================
+ *
+ * IMPORTANT:
+ *
+ * The touchpad is created dynamically by touchpad.js.
+ *
+ * We use fixed positioning because the touchpad position
+ * is based on the viewport.
+ *
+ * The !important values intentionally override the old
+ * desktop/mobile media-query touchpad sizes.
+ *
+ * The JS still controls the exact position and size.
+ *
+ * =========================================================
+ */
+
+#touchpad {
+    position: fixed !important;
+
+    left: 50% !important;
+    top: 70% !important;
+
+    /*
+     * Desktop/default starting size.
+     *
+     * The phone media queries below reduce this.
+     */
+
+    width: 500px !important;
+    height: 180px !important;
+
+    transform: translate(-50%, -50%) !important;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: var(--touchpad-background);
+
+    border: 2px solid var(--touchpad-border);
+
+    border-radius: 18px;
+
+    overflow: visible !important;
+
+    pointer-events: auto;
+
+    touch-action: none;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+
+    /*
+     * Above video.
+     */
+
+    z-index: 50;
+
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease;
+}
+
+
+/* =========================================================
+   TOUCHPAD ACTIVE
+   ========================================================= */
+
+#touchpad:active {
+    background: rgba(45, 45, 45, 0.52);
+
+    border-color: rgba(255, 255, 255, 0.32);
+}
+
+
+/* =========================================================
+   TOUCHPAD LABEL
+   ========================================================= */
+
+#touchpad .touchpad-label {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+
+    color: rgba(255, 255, 255, 0.16);
+
+    font-size: 13px;
+    font-weight: 600;
+
+    letter-spacing: 1.5px;
+
+    pointer-events: none;
+}
+
+
+/*
+ * Fallback label.
+ *
+ * Kept because older versions of the touchpad used
+ * a pseudo-element.
+ */
+
+#touchpad::after {
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   TOUCHPAD SETTINGS BUTTON
+   ========================================================= */
+
+#touchpad #touchpad-settings-button {
+    position: absolute !important;
+
+    top: 7px !important;
+    right: 7px !important;
+
+    left: auto !important;
+    bottom: auto !important;
+
+    width: 40px !important;
+    height: 40px !important;
+
+    display: flex !important;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 !important;
+
+    background: rgba(15, 15, 15, 0.92) !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.30) !important;
+
+    border-radius: 9px !important;
+
+    color: #ffffff !important;
+
+    font-size: 19px !important;
+
+    line-height: 1;
+
+    z-index: 100;
+
+    pointer-events: auto !important;
+
+    touch-action: manipulation !important;
+}
+
+
+#touchpad #touchpad-settings-button:active {
+    transform: scale(0.92);
+}
+
+
+#touchpad #touchpad-settings-button.active {
+    background: rgba(65, 65, 65, 0.95) !important;
+}
+
+
+/* =========================================================
+   TOUCHPAD EDIT MODE
+   ========================================================= */
+
+#touchpad.touchpad-edit-mode {
+    background: rgba(45, 45, 45, 0.62) !important;
+
+    border: 2px dashed rgba(255, 255, 255, 0.78) !important;
+
+    cursor: move;
+}
+
+
+/* =========================================================
+   RESIZE HANDLES
+   =========================================================
+ *
+ * These are the equivalent of the handles seen when
+ * selecting an image in Microsoft Word.
+ *
+ * 8 handles:
+ *
+ *       NW   N   NE
+ *        ●---●---●
+ *        |       |
+ *        W       E
+ *        |       |
+ *        ●---●---●
+ *       SW   S   SE
+ *
+ * They only appear in edit mode.
+ *
+ * =========================================================
+ */
+
+.touchpad-resize-handle {
+    position: absolute;
+
+    width: 18px;
+    height: 18px;
+
+    display: none;
+
+    background: #ffffff;
+
+    border: 2px solid #222222;
+
+    border-radius: 4px;
+
+    z-index: 200;
+
+    pointer-events: auto;
+
+    touch-action: none;
+}
+
+
+/* Show handles only while editing */
+
+#touchpad.touchpad-edit-mode
+.touchpad-resize-handle {
+    display: block;
+}
+
+
+/* =========================================================
+   CORNER HANDLES
+   ========================================================= */
+
+.touchpad-resize-handle.nw {
+    top: -9px;
+    left: -9px;
+
+    cursor: nwse-resize;
+}
+
+
+.touchpad-resize-handle.ne {
+    top: -9px;
+    right: -9px;
+
+    cursor: nesw-resize;
+}
+
+
+.touchpad-resize-handle.se {
+    right: -9px;
+    bottom: -9px;
+
+    cursor: nwse-resize;
+}
+
+
+.touchpad-resize-handle.sw {
+    bottom: -9px;
+    left: -9px;
+
+    cursor: nesw-resize;
+}
+
+
+/* =========================================================
+   EDGE HANDLES
+   ========================================================= */
+
+.touchpad-resize-handle.n {
+    top: -9px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    cursor: ns-resize;
+}
+
+
+.touchpad-resize-handle.s {
+    bottom: -9px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    cursor: ns-resize;
+}
+
+
+.touchpad-resize-handle.e {
+    top: 50%;
+    right: -9px;
+
+    transform: translateY(-50%);
+
+    cursor: ew-resize;
+}
+
+
+.touchpad-resize-handle.w {
+    top: 50%;
+    left: -9px;
+
+    transform: translateY(-50%);
+
+    cursor: ew-resize;
+}
+
+
+/* =========================================================
+   RESIZE HANDLE ACTIVE
+   ========================================================= */
+
+.touchpad-resize-handle:active {
+    transform: scale(1.15);
+}
+
+
+.touchpad-resize-handle.n:active,
+.touchpad-resize-handle.s:active {
+    transform:
+        translateX(-50%)
+        scale(1.15);
+}
+
+
+.touchpad-resize-handle.e:active,
+.touchpad-resize-handle.w:active {
+    transform:
+        translateY(-50%)
+        scale(1.15);
+}
+
+
+/* =========================================================
+   VIRTUAL JOYSTICK
+   ========================================================= */
 
 .virtual-stick {
     position: absolute;
@@ -264,6 +708,7 @@ button {
     height: 120px;
 
     border: 2px solid rgba(255, 255, 255, 0.25);
+
     border-radius: 50%;
 
     background: var(--control-background);
@@ -272,6 +717,7 @@ button {
 
     touch-action: none;
 }
+
 
 .stick-knob {
     position: absolute;
@@ -285,6 +731,7 @@ button {
     transform: translate(-50%, -50%);
 
     border: 2px solid rgba(255, 255, 255, 0.4);
+
     border-radius: 50%;
 
     background: rgba(255, 255, 255, 0.15);
@@ -292,9 +739,10 @@ button {
     pointer-events: none;
 }
 
-/* ---------------------------------------------------------
-   Action buttons
-   --------------------------------------------------------- */
+
+/* =========================================================
+   ACTION BUTTONS
+   ========================================================= */
 
 .action-buttons {
     position: absolute;
@@ -304,18 +752,21 @@ button {
 
     display: grid;
 
-    grid-template-columns: repeat(2, 64px);
+    grid-template-columns:
+        repeat(2, 64px);
 
     gap: 12px;
 
     pointer-events: auto;
 }
 
+
 .action-button {
     width: 64px;
     height: 64px;
 
     border: 2px solid rgba(255, 255, 255, 0.25);
+
     border-radius: 50%;
 
     background: var(--control-background);
@@ -330,17 +781,71 @@ button {
         transform 0.08s ease;
 }
 
+
 .action-button:active,
 .action-button.active {
     background: var(--button-active);
+
     transform: scale(0.92);
 }
 
-/* ---------------------------------------------------------
-   Landscape phone layout
-   --------------------------------------------------------- */
+
+/* =========================================================
+   LANDSCAPE PHONE
+   =========================================================
+ *
+ * This is the important change for your phone.
+ *
+ * Your screenshot is a landscape phone.
+ *
+ * The old CSS used:
+ *
+ *   width: 44%
+ *   height: 55%
+ *
+ * which made the touchpad very large.
+ *
+ * Now:
+ *
+ *   width  = maximum 70vw / 420px
+ *   height = maximum 28vh / 150px
+ *
+ * This gives us a compact starting touchpad.
+ *
+ * =========================================================
+ */
 
 @media (orientation: landscape) and (max-height: 600px) {
+
+    #touchpad {
+        top: 70% !important;
+
+        width: min(70vw, 420px) !important;
+        height: min(28vh, 150px) !important;
+
+        border-radius: 14px !important;
+    }
+
+
+    #touchpad .touchpad-label {
+        font-size: 10px;
+        letter-spacing: 1px;
+    }
+
+
+    #touchpad #touchpad-settings-button {
+        top: 6px !important;
+        right: 6px !important;
+
+        width: 36px !important;
+        height: 36px !important;
+
+        font-size: 17px !important;
+
+        border-radius: 8px !important;
+    }
+
+
     .virtual-stick {
         left: 4%;
         bottom: 6%;
@@ -349,19 +854,23 @@ button {
         height: 105px;
     }
 
+
     .stick-knob {
         width: 46px;
         height: 46px;
     }
 
+
     .action-buttons {
         right: 4%;
         bottom: 6%;
 
-        grid-template-columns: repeat(2, 58px);
+        grid-template-columns:
+            repeat(2, 58px);
 
         gap: 10px;
     }
+
 
     .action-button {
         width: 58px;
@@ -371,34 +880,163 @@ button {
     }
 }
 
-/* ---------------------------------------------------------
-   Small phone screens
-   --------------------------------------------------------- */
+
+/* =========================================================
+   VERY SMALL LANDSCAPE PHONES
+   =========================================================
+ *
+ * Extra protection for small-height phones.
+ *
+ * =========================================================
+ */
+
+@media (orientation: landscape) and (max-height: 400px) {
+
+    #touchpad {
+        top: 68% !important;
+
+        width: 68vw !important;
+        height: 25vh !important;
+
+        max-width: 360px !important;
+        max-height: 115px !important;
+
+        border-radius: 12px !important;
+    }
+
+
+    #touchpad #touchpad-settings-button {
+        width: 32px !important;
+        height: 32px !important;
+
+        font-size: 15px !important;
+    }
+
+
+    .touchpad-resize-handle {
+        width: 15px;
+        height: 15px;
+    }
+
+
+    .touchpad-resize-handle.nw {
+        top: -7px;
+        left: -7px;
+    }
+
+
+    .touchpad-resize-handle.ne {
+        top: -7px;
+        right: -7px;
+    }
+
+
+    .touchpad-resize-handle.se {
+        right: -7px;
+        bottom: -7px;
+    }
+
+
+    .touchpad-resize-handle.sw {
+        bottom: -7px;
+        left: -7px;
+    }
+
+
+    .touchpad-resize-handle.n {
+        top: -7px;
+    }
+
+
+    .touchpad-resize-handle.s {
+        bottom: -7px;
+    }
+
+
+    .touchpad-resize-handle.e {
+        right: -7px;
+    }
+
+
+    .touchpad-resize-handle.w {
+        left: -7px;
+    }
+}
+
+
+/* =========================================================
+   SMALL PHONE / PORTRAIT
+   ========================================================= */
 
 @media (max-width: 480px) {
+
     .panel {
         padding: 24px;
     }
 
+
     .panel h1 {
         font-size: 26px;
     }
+
+
+    /*
+     * Compact portrait touchpad.
+     *
+     * Width:
+     *   maximum 82vw
+     *
+     * Height:
+     *   maximum 25vh
+     */
+
+    #touchpad {
+        top: 68% !important;
+
+        width: min(82vw, 380px) !important;
+        height: min(25vh, 150px) !important;
+
+        border-radius: 14px !important;
+    }
+
+
+    #touchpad .touchpad-label {
+        font-size: 10px;
+
+        letter-spacing: 1px;
+    }
+
+
+    #touchpad #touchpad-settings-button {
+        top: 6px !important;
+        right: 6px !important;
+
+        width: 36px !important;
+        height: 36px !important;
+
+        font-size: 17px !important;
+    }
+
 
     .virtual-stick {
         width: 100px;
         height: 100px;
     }
 
+
     .stick-knob {
         width: 44px;
         height: 44px;
     }
 
+
     .action-buttons {
-        grid-template-columns: repeat(2, 54px);
+        grid-template-columns:
+            repeat(2, 54px);
 
         gap: 8px;
     }
+
 
     .action-button {
         width: 54px;
@@ -408,15 +1046,50 @@ button {
     }
 }
 
-/* ---------------------------------------------------------
-   Desktop development layout
-   --------------------------------------------------------- */
+
+/* =========================================================
+   VERY SMALL PORTRAIT PHONE
+   ========================================================= */
+
+@media (max-width: 360px) {
+
+    #touchpad {
+        width: 82vw !important;
+        height: 22vh !important;
+
+        max-width: 300px !important;
+        max-height: 125px !important;
+    }
+
+
+    #touchpad #touchpad-settings-button {
+        width: 32px !important;
+        height: 32px !important;
+
+        font-size: 15px !important;
+    }
+}
+
+
+/* =========================================================
+   DESKTOP DEVELOPMENT
+   ========================================================= */
 
 @media (min-width: 900px) and (min-height: 700px) {
+
+    #touchpad {
+        top: 70% !important;
+
+        width: 500px !important;
+        height: 180px !important;
+    }
+
+
     .virtual-stick {
         left: 40px;
         bottom: 40px;
     }
+
 
     .action-buttons {
         right: 40px;
@@ -424,18 +1097,83 @@ button {
     }
 }
 
-/* ---------------------------------------------------------
-   Accessibility / reduced motion
-   --------------------------------------------------------- */
+
+/* =========================================================
+   ACCESSIBILITY / REDUCED MOTION
+   ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
+
     .loading-spinner {
         animation: none;
     }
 
+
     #connect-button,
     #retry-button,
-    .action-button {
+    .action-button,
+    #touchpad {
         transition: none;
     }
+}
+
+
+/* =========================================================
+   OLD REMOTE CONTROL LAYER
+   =========================================================
+ *
+ * The old static controls are intentionally disabled.
+ *
+ * The new touchpad is created directly by touchpad.js.
+ *
+ * =========================================================
+ */
+
+#touch-controls {
+    display: none !important;
+}
+
+
+/*
+ * Old settings toggle.
+ *
+ * No longer used.
+ */
+
+#touchpad-settings-toggle {
+    display: none !important;
+}
+
+
+/*
+ * Old settings container.
+ *
+ * No longer used.
+ */
+
+.game-stream-touchpad-settings {
+    display: none !important;
+}
+
+/* =========================================================
+   TOUCHPAD EDITOR — UNLIMITED RESIZE
+   ========================================================= */
+
+#touchpad {
+    max-width: none !important;
+    max-height: none !important;
+
+    min-width: 160px !important;
+    min-height: 80px !important;
+}
+
+/*
+ * During editing, JavaScript controls the exact
+ * width and height.
+ *
+ * Do NOT impose viewport-based dimensions here.
+ */
+#touchpad.touchpad-edit-mode {
+    max-width: none !important;
+    max-height: none !important;
 }

@@ -1,15 +1,18 @@
 """
-Remote input handling for the Game Stream server.
+Generic remote input handling for the Game Stream server.
 
-This module receives normalized input commands from the WebRTC
-DataChannel and translates them into keyboard and mouse actions
-on the gaming PC.
+This module receives normalized keyboard, mouse, and controller
+events and translates them into local input actions.
+
+The input system is intentionally generic so that the client UI
+does not need to know how the PC implements the input.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from threading import Lock
+from typing import Any
 
 from pynput import keyboard, mouse
 
@@ -19,23 +22,62 @@ from server.utils.logger import logger
 
 @dataclass(frozen=True)
 class InputEvent:
-    """Normalized input event received from the remote client."""
+    """Generic normalized input event."""
 
     event_type: str
     action: str
+
     key: str | None = None
+
     x: float | None = None
     y: float | None = None
+
+    dx: float | None = None
+    dy: float | None = None
+
     button: str | None = None
+
+    controller: str | None = None
+    axis: str | None = None
+    value: float | None = None
 
 
 class InputHandler:
     """
-    Translate remote input events into local keyboard and mouse actions.
+    Translate generic remote input events into local PC actions.
 
-    Keyboard keys are kept in a set so that key-down and key-up events
-    can be tracked safely and duplicate key-down events are ignored.
+    Keyboard and mouse events are currently implemented through
+    pynput.
+
+    Controller events are accepted and stored by the generic
+    input layer. Actual virtual controller injection will be
+    implemented in Task 5.
     """
+
+    SUPPORTED_EVENT_TYPES = {
+        "keyboard",
+        "mouse",
+        "controller",
+    }
+
+    KEYBOARD_ACTIONS = {
+        "down",
+        "up",
+    }
+
+    MOUSE_ACTIONS = {
+        "move",
+        "down",
+        "up",
+        "click",
+        "scroll",
+    }
+
+    CONTROLLER_ACTIONS = {
+        "button_down",
+        "button_up",
+        "axis",
+    }
 
     def __init__(self) -> None:
         self.enabled = CONFIG.input.enabled
@@ -43,12 +85,24 @@ class InputHandler:
         self._keyboard = keyboard.Controller()
         self._mouse = mouse.Controller()
 
-        self._pressed_keys: set[keyboard.Key | keyboard.KeyCode] = set()
+        self._pressed_keys: set[
+            keyboard.Key | keyboard.KeyCode
+        ] = set()
+
+        self._pressed_mouse_buttons: set[
+            mouse.Button
+        ] = set()
+
+        self._controller_state: dict[
+            str,
+            dict[str, Any],
+        ] = {}
+
         self._lock = Lock()
 
     def handle_event(self, event: InputEvent) -> bool:
         """
-        Process one normalized input event.
+        Process one generic input event.
 
         Returns True when the event was handled successfully.
         """
@@ -57,165 +111,516 @@ class InputHandler:
             return False
 
         try:
-            if event.event_type == "keyboard":
+            event_type = event.event_type.strip().lower()
+
+            if event_type == "keyboard":
                 return self._handle_keyboard(event)
 
-            if event.event_type == "mouse":
+            if event_type == "mouse":
                 return self._handle_mouse(event)
 
-            logger.warning("Unknown input event type: %s", event.event_type)
+            if event_type == "controller":
+                return self._handle_controller(event)
+
+            logger.warning(
+                "Unsupported input event type: %s",
+                event.event_type,
+            )
+
             return False
 
         except Exception:
-            logger.exception("Failed to handle input event")
+            logger.exception(
+                "Failed to handle input event"
+            )
+
             return False
 
-    def _handle_keyboard(self, event: InputEvent) -> bool:
-        """Handle keyboard press and release events."""
+    # =============================================================
+    # KEYBOARD
+    # =============================================================
+
+    def _handle_keyboard(
+        self,
+        event: InputEvent,
+    ) -> bool:
+        """Handle generic keyboard events."""
+
+        if event.action not in self.KEYBOARD_ACTIONS:
+            logger.warning(
+                "Unsupported keyboard action: %s",
+                event.action,
+            )
+            return False
 
         if not event.key:
-            logger.warning("Keyboard event missing key")
+            logger.warning(
+                "Keyboard event missing key"
+            )
             return False
 
         key = self._parse_key(event.key)
 
         with self._lock:
             if event.action == "down":
+                # Ignore duplicate key-down events.
                 if key in self._pressed_keys:
                     return True
 
                 self._keyboard.press(key)
                 self._pressed_keys.add(key)
+
                 return True
 
-            if event.action == "up":
-                self._keyboard.release(key)
-                self._pressed_keys.discard(key)
-                return True
+            self._keyboard.release(key)
+            self._pressed_keys.discard(key)
 
-        logger.warning("Unknown keyboard action: %s", event.action)
-        return False
+            return True
 
-    def _handle_mouse(self, event: InputEvent) -> bool:
-        """Handle mouse movement, button, and scroll events."""
+    # =============================================================
+    # MOUSE
+    # =============================================================
+
+    def _handle_mouse(
+        self,
+        event: InputEvent,
+    ) -> bool:
+        """Handle generic mouse events."""
 
         if event.action == "move":
-            if event.x is None or event.y is None:
-                logger.warning("Mouse move event missing coordinates")
-                return False
+            return self._handle_mouse_move(event)
 
-            self._move_mouse(event.x, event.y)
-            return True
+        if event.action == "down":
+            return self._handle_mouse_button(
+                event,
+                pressed=True,
+            )
 
-        if event.action in {"down", "up"}:
-            if not event.button:
-                logger.warning("Mouse button event missing button")
-                return False
+        if event.action == "up":
+            return self._handle_mouse_button(
+                event,
+                pressed=False,
+            )
 
-            button = self._parse_mouse_button(event.button)
-
-            if event.action == "down":
-                self._mouse.press(button)
-            else:
-                self._mouse.release(button)
-
-            return True
+        if event.action == "click":
+            return self._handle_mouse_click(event)
 
         if event.action == "scroll":
-            if event.y is None:
-                logger.warning("Mouse scroll event missing y value")
-                return False
+            return self._handle_mouse_scroll(event)
 
-            self._mouse.scroll(0, int(event.y))
-            return True
+        logger.warning(
+            "Unsupported mouse action: %s",
+            event.action,
+        )
 
-        logger.warning("Unknown mouse action: %s", event.action)
         return False
 
-    def _move_mouse(self, normalized_x: float, normalized_y: float) -> None:
+    def _handle_mouse_move(
+        self,
+        event: InputEvent,
+    ) -> bool:
         """
-        Move the local mouse using normalized coordinates.
+        Handle mouse movement.
 
-        Coordinates are expected to be in the range 0.0–1.0.
+        Relative movement uses dx/dy.
+
+        Absolute movement uses normalized x/y.
         """
 
-        x = min(max(float(normalized_x), 0.0), 1.0)
-        y = min(max(float(normalized_y), 0.0), 1.0)
+        if (
+            event.dx is not None
+            or event.dy is not None
+        ):
+            dx = (
+                event.dx
+                if event.dx is not None
+                else 0.0
+            )
+
+            dy = (
+                event.dy
+                if event.dy is not None
+                else 0.0
+            )
+
+            self._move_mouse_relative(
+                dx,
+                dy,
+            )
+
+            return True
+
+        if (
+            event.x is not None
+            and event.y is not None
+        ):
+            self._move_mouse_absolute(
+                event.x,
+                event.y,
+            )
+
+            return True
+
+        logger.warning(
+            "Mouse move event requires x/y or dx/dy"
+        )
+
+        return False
+
+    def _handle_mouse_button(
+        self,
+        event: InputEvent,
+        pressed: bool,
+    ) -> bool:
+        """Handle mouse button press/release."""
+
+        if not event.button:
+            logger.warning(
+                "Mouse button event missing button"
+            )
+            return False
+
+        button = self._parse_mouse_button(
+            event.button
+        )
+
+        with self._lock:
+            if pressed:
+                self._mouse.press(button)
+                self._pressed_mouse_buttons.add(
+                    button
+                )
+            else:
+                self._mouse.release(button)
+                self._pressed_mouse_buttons.discard(
+                    button
+                )
+
+        return True
+
+    def _handle_mouse_click(
+        self,
+        event: InputEvent,
+    ) -> bool:
+        """Handle a complete mouse click."""
+
+        if not event.button:
+            logger.warning(
+                "Mouse click event missing button"
+            )
+            return False
+
+        button = self._parse_mouse_button(
+            event.button
+        )
+
+        self._mouse.click(button)
+
+        return True
+
+    def _handle_mouse_scroll(
+        self,
+        event: InputEvent,
+    ) -> bool:
+        """Handle mouse scrolling."""
+
+        if (
+            event.x is None
+            and event.y is None
+        ):
+            logger.warning(
+                "Mouse scroll event requires x or y"
+            )
+            return False
+
+        horizontal = (
+            int(event.x)
+            if event.x is not None
+            else 0
+        )
+
+        vertical = (
+            int(event.y)
+            if event.y is not None
+            else 0
+        )
+
+        self._mouse.scroll(
+            horizontal,
+            vertical,
+        )
+
+        return True
+
+    def _move_mouse_relative(
+        self,
+        dx: float,
+        dy: float,
+    ) -> None:
+        """Move the local mouse relatively."""
+
+        self._mouse.move(
+            int(round(dx)),
+            int(round(dy)),
+        )
+
+    def _move_mouse_absolute(
+        self,
+        normalized_x: float,
+        normalized_y: float,
+    ) -> None:
+        """Move the local mouse using normalized coordinates."""
+
+        x = min(
+            max(float(normalized_x), 0.0),
+            1.0,
+        )
+
+        y = min(
+            max(float(normalized_y), 0.0),
+            1.0,
+        )
 
         screen_width = self._get_screen_width()
         screen_height = self._get_screen_height()
 
-        target_x = int(x * (screen_width - 1))
-        target_y = int(y * (screen_height - 1))
+        target_x = int(
+            x * (screen_width - 1)
+        )
 
-        self._mouse.position = (target_x, target_y)
+        target_y = int(
+            y * (screen_height - 1)
+        )
+
+        self._mouse.position = (
+            target_x,
+            target_y,
+        )
+
+    # =============================================================
+    # CONTROLLER
+    # =============================================================
+
+    def _handle_controller(
+        self,
+        event: InputEvent,
+    ) -> bool:
+        """
+        Handle generic controller events.
+
+        Actual OS controller injection is intentionally deferred
+        to Task 5.
+        """
+
+        if event.action not in self.CONTROLLER_ACTIONS:
+            logger.warning(
+                "Unsupported controller action: %s",
+                event.action,
+            )
+            return False
+
+        controller_name = (
+            event.controller or "default"
+        ).strip().lower()
+
+        controller_state = (
+            self._controller_state.setdefault(
+                controller_name,
+                {
+                    "buttons": set(),
+                    "axes": {},
+                },
+            )
+        )
+
+        if event.action == "button_down":
+            if not event.button:
+                logger.warning(
+                    "Controller button_down missing button"
+                )
+                return False
+
+            controller_state["buttons"].add(
+                event.button
+            )
+
+            logger.debug(
+                "Controller button down: %s",
+                event.button,
+            )
+
+            return True
+
+        if event.action == "button_up":
+            if not event.button:
+                logger.warning(
+                    "Controller button_up missing button"
+                )
+                return False
+
+            controller_state["buttons"].discard(
+                event.button
+            )
+
+            logger.debug(
+                "Controller button up: %s",
+                event.button,
+            )
+
+            return True
+
+        if event.action == "axis":
+            if not event.axis:
+                logger.warning(
+                    "Controller axis event missing axis"
+                )
+                return False
+
+            if event.value is None:
+                logger.warning(
+                    "Controller axis event missing value"
+                )
+                return False
+
+            value = min(
+                max(float(event.value), -1.0),
+                1.0,
+            )
+
+            controller_state["axes"][
+                event.axis
+            ] = value
+
+            logger.debug(
+                "Controller axis %s = %.3f",
+                event.axis,
+                value,
+            )
+
+            return True
+
+        return False
+
+    # =============================================================
+    # KEY PARSING
+    # =============================================================
 
     @staticmethod
-    def _parse_key(key_value: str) -> keyboard.Key | keyboard.KeyCode:
-        """
-        Convert a client key string into a pynput keyboard key.
-        """
+    def _parse_key(
+        key_value: str,
+    ) -> keyboard.Key | keyboard.KeyCode:
+        """Convert a client key string into a pynput key."""
 
-        normalized = key_value.strip().lower()
+        normalized = (
+            key_value.strip().lower()
+        )
 
-        special_keys = {
+        special_keys: dict[
+            str,
+            keyboard.Key | keyboard.KeyCode,
+        ] = {
             "backspace": keyboard.Key.backspace,
             "delete": keyboard.Key.delete,
+
             "enter": keyboard.Key.enter,
+            "return": keyboard.Key.enter,
+
             "escape": keyboard.Key.esc,
             "esc": keyboard.Key.esc,
+
             "tab": keyboard.Key.tab,
             "space": keyboard.Key.space,
+
             "shift": keyboard.Key.shift,
             "shiftleft": keyboard.Key.shift_l,
             "shiftright": keyboard.Key.shift_r,
+
             "ctrl": keyboard.Key.ctrl,
             "control": keyboard.Key.ctrl,
+
             "ctrlleft": keyboard.Key.ctrl_l,
             "ctrlright": keyboard.Key.ctrl_r,
+
             "alt": keyboard.Key.alt,
             "altleft": keyboard.Key.alt_l,
             "altright": keyboard.Key.alt_r,
+
             "windows": keyboard.Key.cmd,
             "win": keyboard.Key.cmd,
             "cmd": keyboard.Key.cmd,
+
             "arrowup": keyboard.Key.up,
+            "up": keyboard.Key.up,
+
             "arrowdown": keyboard.Key.down,
+            "down": keyboard.Key.down,
+
             "arrowleft": keyboard.Key.left,
+            "left": keyboard.Key.left,
+
             "arrowright": keyboard.Key.right,
+            "right": keyboard.Key.right,
+
             "home": keyboard.Key.home,
             "end": keyboard.Key.end,
+
             "pageup": keyboard.Key.page_up,
             "pagedown": keyboard.Key.page_down,
+
             "insert": keyboard.Key.insert,
+
             "capslock": keyboard.Key.caps_lock,
             "numlock": keyboard.Key.num_lock,
+
             "printscreen": keyboard.Key.print_screen,
             "pause": keyboard.Key.pause,
+
+            "menu": keyboard.Key.menu,
         }
 
         if normalized in special_keys:
             return special_keys[normalized]
 
         if len(normalized) == 1:
-            return keyboard.KeyCode.from_char(normalized)
+            return keyboard.KeyCode.from_char(
+                normalized
+            )
 
-        if normalized.startswith("f") and normalized[1:].isdigit():
-            function_number = int(normalized[1:])
+        if (
+            normalized.startswith("f")
+            and normalized[1:].isdigit()
+        ):
+            function_number = int(
+                normalized[1:]
+            )
 
             if 1 <= function_number <= 12:
-                return getattr(
+                function_key = getattr(
                     keyboard.Key,
                     f"f{function_number}",
+                    None,
                 )
 
-        raise ValueError(f"Unsupported keyboard key: {key_value}")
+                if function_key is not None:
+                    return function_key
+
+        raise ValueError(
+            f"Unsupported keyboard key: {key_value}"
+        )
+
+    # =============================================================
+    # MOUSE BUTTON PARSING
+    # =============================================================
 
     @staticmethod
-    def _parse_mouse_button(button_value: str) -> mouse.Button:
-        """Convert a client mouse-button string into a pynput button."""
+    def _parse_mouse_button(
+        button_value: str,
+    ) -> mouse.Button:
+        """Convert a client mouse button name."""
 
-        normalized = button_value.strip().lower()
+        normalized = (
+            button_value.strip().lower()
+        )
 
         buttons = {
             "left": mouse.Button.left,
@@ -224,9 +629,15 @@ class InputHandler:
         }
 
         if normalized not in buttons:
-            raise ValueError(f"Unsupported mouse button: {button_value}")
+            raise ValueError(
+                f"Unsupported mouse button: {button_value}"
+            )
 
         return buttons[normalized]
+
+    # =============================================================
+    # SCREEN HELPERS
+    # =============================================================
 
     @staticmethod
     def _get_screen_width() -> int:
@@ -236,7 +647,10 @@ class InputHandler:
             import mss
 
             with mss.mss() as capture:
-                return int(capture.monitors[1]["width"])
+                return int(
+                    capture.monitors[1]["width"]
+                )
+
         except Exception:
             return CONFIG.video.width
 
@@ -248,39 +662,76 @@ class InputHandler:
             import mss
 
             with mss.mss() as capture:
-                return int(capture.monitors[1]["height"])
+                return int(
+                    capture.monitors[1]["height"]
+                )
+
         except Exception:
             return CONFIG.video.height
 
+    # =============================================================
+    # CLEANUP
+    # =============================================================
+
     def release_all(self) -> None:
         """
-        Release every keyboard key currently held by the remote client.
+        Release every active keyboard and mouse input.
 
-        This is important when a connection drops while a key is held.
+        This prevents stuck keys/buttons when the connection
+        disappears while an input is held.
         """
 
         with self._lock:
-            for key in tuple(self._pressed_keys):
+            for key in tuple(
+                self._pressed_keys
+            ):
                 try:
                     self._keyboard.release(key)
                 except Exception:
-                    logger.exception("Failed to release keyboard key")
+                    logger.exception(
+                        "Failed to release keyboard key"
+                    )
 
             self._pressed_keys.clear()
+
+            for button in tuple(
+                self._pressed_mouse_buttons
+            ):
+                try:
+                    self._mouse.release(button)
+                except Exception:
+                    logger.exception(
+                        "Failed to release mouse button"
+                    )
+
+            self._pressed_mouse_buttons.clear()
+
+            for state in (
+                self._controller_state.values()
+            ):
+                state["buttons"].clear()
+                state["axes"].clear()
 
     def close(self) -> None:
         """Release all active input state."""
 
         self.release_all()
 
-        logger.info("Input handler closed")
+        logger.info(
+            "Input handler closed"
+        )
 
     def __enter__(self) -> "InputHandler":
-        """Create an active input handler using a context manager."""
+        """Create an active input handler."""
 
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        """Release input state when leaving a context manager."""
+    def __exit__(
+        self,
+        exc_type,
+        exc_value,
+        traceback,
+    ) -> None:
+        """Release input state on context exit."""
 
         self.close()

@@ -1,7 +1,8 @@
 /*
  * Main application controller for the Game Stream client.
  *
- * This module connects the UI, WebRTC client, and game controls.
+ * This module connects the UI, WebRTC client, game controls,
+ * and standalone touchpad.
  * It is the browser application's main entry point.
  */
 
@@ -12,6 +13,7 @@ class GameStreamApp {
         this.ui = null;
         this.webrtc = null;
         this.controls = null;
+        this.touchpad = null;
 
         this.connecting = false;
         this.initialized = false;
@@ -40,6 +42,12 @@ class GameStreamApp {
         this.controls = new GameControls();
         this.controls.initialize(this.webrtc);
 
+        this.touchpad = new Touchpad(
+            this.webrtc
+        );
+
+        this.touchpad.initialize();
+
         this.configureWebRTCEvents();
         this.configureUIEvents();
 
@@ -49,7 +57,9 @@ class GameStreamApp {
             "Ready to connect to gaming PC."
         );
 
-        console.info("Game Stream client initialized.");
+        console.info(
+            "Game Stream client initialized."
+        );
     }
 
     configureWebRTCEvents() {
@@ -73,10 +83,14 @@ class GameStreamApp {
 
     configureUIEvents() {
         const connectButton =
-            document.getElementById("connect-button");
+            document.getElementById(
+                "connect-button"
+            );
 
         const retryButton =
-            document.getElementById("retry-button");
+            document.getElementById(
+                "retry-button"
+            );
 
         if (!connectButton || !retryButton) {
             throw new Error(
@@ -116,6 +130,10 @@ class GameStreamApp {
 
         this.controls.resetAllInputs();
 
+        if (this.touchpad) {
+            this.touchpad.hide();
+        }
+
         this.ui.showConnecting();
 
         try {
@@ -151,6 +169,10 @@ class GameStreamApp {
 
         this.controls.resetAllInputs();
 
+        if (this.touchpad) {
+            this.touchpad.hide();
+        }
+
         await this.webrtc.disconnect();
 
         this.connecting = false;
@@ -181,6 +203,10 @@ class GameStreamApp {
             case "disconnected":
                 this.controls.resetAllInputs();
 
+                if (this.touchpad) {
+                    this.touchpad.hide();
+                }
+
                 this.ui.showConnectionError(
                     "The connection to the gaming PC was lost."
                 );
@@ -190,6 +216,10 @@ class GameStreamApp {
             case "failed":
                 this.controls.resetAllInputs();
 
+                if (this.touchpad) {
+                    this.touchpad.hide();
+                }
+
                 this.ui.showConnectionError(
                     "WebRTC connection failed."
                 );
@@ -198,6 +228,10 @@ class GameStreamApp {
 
             case "closed":
                 this.controls.resetAllInputs();
+
+                if (this.touchpad) {
+                    this.touchpad.hide();
+                }
 
                 if (!this.connecting) {
                     this.ui.showDisconnected();
@@ -219,6 +253,10 @@ class GameStreamApp {
         this.ui.setConnectionStatus(
             "Connected to gaming PC."
         );
+
+        if (this.touchpad) {
+            this.touchpad.show();
+        }
 
         console.info(
             "Game video is ready."
@@ -242,6 +280,10 @@ class GameStreamApp {
         this.connecting = false;
 
         this.controls.resetAllInputs();
+
+        if (this.touchpad) {
+            this.touchpad.hide();
+        }
 
         this.ui.showConnectionError(
             message ||
@@ -281,7 +323,8 @@ class GameStreamApp {
 
 function initializeGameStream() {
     try {
-        const app = new GameStreamApp();
+        const app =
+            new GameStreamApp();
 
         app.initialize();
 
